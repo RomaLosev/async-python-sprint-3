@@ -1,4 +1,6 @@
-
+chat.log
+debug.json
+.env/
 .idea/
 __pycache__/
 *.pyc
