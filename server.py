@@ -1,5 +1,7 @@
 import asyncio
+from asyncio import StreamReader, StreamWriter
 from loguru import logger
+
 from client_model import Client
 
 logger.add(
@@ -7,6 +9,13 @@ logger.add(
     format='{time} {level} {message}',
     level='DEBUG',
 )
+
+WELCOME = "Welcome to chat \n"\
+          "Please choose you nickname \n" \
+          "Write /nick <your nickname> \n" \
+          "You can send private msg \n" \
+          "Write /private <nickname> <message>\n" \
+          "Write quit to leave chat"
 
 
 class Server:
@@ -53,13 +62,13 @@ class Server:
 
         self.shutdown_server()
 
-    def accept_client(self, client_reader: asyncio.StreamReader, client_writer: asyncio.StreamWriter):
-        client = Client(client_reader, client_writer)
+    def accept_client(self, reader: StreamReader, writer: StreamWriter):
+        client = Client(reader, writer)
         task = asyncio.Task(self.incoming_client_message_cb(client))
         self.clients[task] = client
-
-        client_ip = client_writer.get_extra_info('peername')[0]
-        client_port = client_writer.get_extra_info('peername')[1]
+        writer.write(WELCOME.encode())
+        client_ip = writer.get_extra_info('peername')[0]
+        client_port = writer.get_extra_info('peername')[1]
         self.logger.info(f"New Connection: {client_ip}:{client_port}")
 
         task.add_done_callback(self.disconnect_client)
@@ -82,8 +91,7 @@ class Server:
 
         self.logger.info("Client Disconnected!")
 
-    @staticmethod
-    def handle_client_command(client: Client, client_message: str):
+    def handle_client_command(self, client: Client, client_message: str):
         client_message = client_message.replace("\n", "").replace("\r", "")
         if client_message.startswith("/nick"):
             split_client_message = client_message.split(" ")
@@ -92,12 +100,32 @@ class Server:
                 client.writer.write(
                     f"Nickname changed to {client.nickname}\n".encode('utf8'))
                 return
-        client.writer.write("Invalid Command\n".encode('utf8'))
+
+        elif client_message.startswith("/private"):
+            split_client_message = client_message.split(" ")
+            if len(split_client_message) >= 2:
+                msg_for = split_client_message[1]
+                for target in self.clients.values():
+                    if msg_for == target.nickname:
+                        self.private_message(
+                            (
+                                client_message.replace(
+                                    "/private", f"private message from {client.nickname}: "
+                                ).replace(f"{msg_for}", "")
+                             ).encode(), target
+                        )
+        else:
+            client.writer.write("Invalid Command\n".encode('utf8'))
 
     def broadcast_message(self, message: bytes, exclusion_list: list = []):
+        logger.info(self.clients)
         for client in self.clients.values():
             if client not in exclusion_list:
                 client.writer.write(message)
+
+    @staticmethod
+    def private_message(message: bytes, target: Client):
+        target.writer.write(message)
 
     def disconnect_client(self, task: asyncio.Task):
         client = self.clients[task]

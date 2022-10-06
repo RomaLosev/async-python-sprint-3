@@ -1,15 +1,15 @@
 import asyncio
-import sys
+from asyncio import StreamReader, StreamWriter, AbstractEventLoop
 from aioconsole import ainput
 
 
 class Client:
-    def __init__(self, loop: asyncio.AbstractEventLoop, server_ip: str = '127.0.0.1', server_port: int = 8000):
+    def __init__(self, loop: AbstractEventLoop, server_ip: str = '127.0.0.1', server_port: int = 8000):
         self.__server_ip: str = server_ip
         self.__server_port: int = server_port
-        self.__loop: asyncio.AbstractEventLoop = loop
-        self.__reader: asyncio.StreamReader = None
-        self.__writer: asyncio.StreamWriter = None
+        self.__loop: AbstractEventLoop = loop
+        self.__reader: StreamReader = None
+        self.__writer: StreamWriter = None
 
     @property
     def server_ip(self):

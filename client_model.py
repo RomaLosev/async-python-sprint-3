@@ -1,10 +1,10 @@
-import asyncio
+from asyncio import StreamReader, StreamWriter
 
 
 class Client:
-    def __init__(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-        self.__reader: asyncio.StreamReader = reader
-        self.__writer: asyncio.StreamWriter = writer
+    def __init__(self, reader: StreamReader, writer: StreamWriter):
+        self.__reader: StreamReader = reader
+        self.__writer: StreamWriter = writer
         self.__ip: str = writer.get_extra_info('peername')[0]
         self.__port: int = writer.get_extra_info('peername')[1]
         self.nickname: str = str(writer.get_extra_info('peername'))
