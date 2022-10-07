@@ -4,3 +4,4 @@ debug.json
 .idea/
 __pycache__/
 *.pyc
+env/
